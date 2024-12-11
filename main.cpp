@@ -7,7 +7,8 @@
 #include <algorithm>
 #include <map>
 #include <thread>
-#include <sstream>  // For stringstream
+#include <sstream>   // For stringstream
+#include <climits>
 
 // Utility function to get current date and time as a string
 std::string currentDateTime() {
@@ -39,7 +40,12 @@ public:
     double calculateEnergyConsumed() const {
         double totalEnergy = 0.0;
         for (const auto& record : activationRecords) {
-            double duration = difftime(record.offTime, record.onTime) / 3600.0; // in hours
+            std::time_t endTime = record.offTime;
+            if (record.offTime == 0) {
+                // Device is still ON, use current time
+                endTime = std::time(nullptr);
+            }
+            double duration = difftime(endTime, record.onTime) / 3600.0; // in hours
             totalEnergy += (powerRating / 1000.0) * duration;
         }
         return totalEnergy;
@@ -49,7 +55,12 @@ public:
     double totalActiveTime() const {
         double totalTime = 0.0;
         for (const auto& record : activationRecords) {
-            totalTime += difftime(record.offTime, record.onTime);
+            std::time_t endTime = record.offTime;
+            if (record.offTime == 0) {
+                // Device is still ON, use current time
+                endTime = std::time(nullptr);
+            }
+            totalTime += difftime(endTime, record.onTime);
         }
         return totalTime; // in seconds
     }
@@ -68,14 +79,24 @@ public:
 bool authenticateUser() {
     const std::string PASSWORD = "5680";
     std::string input;
-    std::cout << "Enter password: ";
-    std::cin >> input;
-    if (input == PASSWORD) {
-        return true;
-    } else {
-        std::cout << "Incorrect password.\n";
-        return false;
+    int attempts = 0;
+    const int MAX_ATTEMPTS = 3;
+    while (attempts < MAX_ATTEMPTS) {
+        std::cout << "Enter password: ";
+        std::cin >> input;
+        if (input == PASSWORD) {
+            std::cout << "Authentication successful.\n";
+            return true;
+        } else {
+            std::cout << "Incorrect password. ";
+            attempts++;
+            if (attempts < MAX_ATTEMPTS) {
+                std::cout << "Please try again.\n";
+            }
+        }
     }
+    std::cout << "Maximum attempts reached. Access denied.\n";
+    return false;
 }
 
 // Function prototypes
@@ -118,6 +139,13 @@ void mainMenu(std::vector<Room>& rooms) {
         std::cout << "Enter your choice: ";
         std::cin >> choice;
 
+        while (std::cin.fail()) {
+            std::cin.clear(); // Clear error flags
+            std::cin.ignore(INT_MAX, '\n'); // Discard invalid input
+            std::cout << "Invalid input. Please enter a number between 1 and 5: ";
+            std::cin >> choice;
+        }
+
         switch (choice) {
             case 1:
                 if (authenticateUser()) {
@@ -137,7 +165,7 @@ void mainMenu(std::vector<Room>& rooms) {
                 std::cout << "Exiting the program.\n";
                 break;
             default:
-                std::cout << "Invalid choice. Please try again.\n";
+                std::cout << "Invalid choice. Please enter a number between 1 and 5.\n";
         }
     } while (choice != 5);
 }
@@ -159,6 +187,13 @@ void settingsMenu(std::vector<Room>& rooms) {
         std::cout << "Enter your choice: ";
         std::cin >> choice;
 
+        while (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(INT_MAX, '\n');
+            std::cout << "Invalid input. Please enter a number between 1 and 4: ";
+            std::cin >> choice;
+        }
+
         switch (choice) {
             case 1:
                 initializeMenu(rooms);
@@ -173,7 +208,7 @@ void settingsMenu(std::vector<Room>& rooms) {
                 std::cout << "Exiting Settings Menu.\n";
                 break;
             default:
-                std::cout << "Invalid choice. Please try again.\n";
+                std::cout << "Invalid choice. Please enter a number between 1 and 4.\n";
         }
     } while (choice != 4);
 }
@@ -194,6 +229,13 @@ void initializeMenu(std::vector<Room>& rooms) {
         std::cout << "Enter your choice: ";
         std::cin >> choice;
 
+        while (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(INT_MAX, '\n');
+            std::cout << "Invalid input. Please enter a number between 1 and 3: ";
+            std::cin >> choice;
+        }
+
         switch (choice) {
             case 1:
                 addRooms(rooms);
@@ -205,7 +247,7 @@ void initializeMenu(std::vector<Room>& rooms) {
                 std::cout << "Exiting Initialize Menu.\n";
                 break;
             default:
-                std::cout << "Invalid choice. Please try again.\n";
+                std::cout << "Invalid choice. Please enter a number between 1 and 3.\n";
         }
     } while (choice != 3);
 }
@@ -215,6 +257,14 @@ void addRooms(std::vector<Room>& rooms) {
     int numRooms;
     std::cout << "Enter number of rooms: ";
     std::cin >> numRooms;
+
+    while (std::cin.fail() || numRooms <= 0) {
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+        std::cout << "Invalid number of rooms. Please enter a positive integer: ";
+        std::cin >> numRooms;
+    }
+
     for (int i = 0; i < numRooms; ++i) {
         std::string roomName;
         std::cout << "Enter name for Room " << (i + 1) << ": ";
@@ -235,6 +285,14 @@ void addDevices(std::vector<Room>& rooms) {
         std::cout << "Adding devices to " << room.name << ".\n";
         std::cout << "How many devices in " << room.name << "?: ";
         std::cin >> numDevices;
+
+        while (std::cin.fail() || numDevices <= 0) {
+            std::cin.clear();
+            std::cin.ignore(INT_MAX, '\n');
+            std::cout << "Invalid number of devices. Please enter a positive integer: ";
+            std::cin >> numDevices;
+        }
+
         for (int i = 0; i < numDevices; ++i) {
             std::string deviceName;
             double powerRating;
@@ -242,6 +300,14 @@ void addDevices(std::vector<Room>& rooms) {
             std::cin >> deviceName;
             std::cout << "Enter power rating (in watts) for " << deviceName << ": ";
             std::cin >> powerRating;
+
+            while (std::cin.fail() || powerRating <= 0) {
+                std::cin.clear();
+                std::cin.ignore(INT_MAX, '\n');
+                std::cout << "Invalid power rating. Please enter a positive number: ";
+                std::cin >> powerRating;
+            }
+
             room.devices.emplace_back(deviceName, powerRating);
             std::cout << "Device \"" << deviceName << "\" added to " << room.name << ".\n";
         }
@@ -268,6 +334,13 @@ void modeSelectionMenu(std::vector<Room>& rooms) {
         std::cout << "Enter your choice: ";
         std::cin >> choice;
 
+        while (std::cin.fail()) {
+            std::cin.clear();
+            std::cin.ignore(INT_MAX, '\n');
+            std::cout << "Invalid input. Please enter a number between 1 and 3: ";
+            std::cin >> choice;
+        }
+
         switch (choice) {
             case 1:
                 manualMode(rooms);
@@ -279,7 +352,7 @@ void modeSelectionMenu(std::vector<Room>& rooms) {
                 std::cout << "Exiting Mode Selection Menu.\n";
                 break;
             default:
-                std::cout << "Invalid choice. Please try again.\n";
+                std::cout << "Invalid choice. Please enter a number between 1 and 3.\n";
         }
     } while (choice != 3);
 }
@@ -296,11 +369,20 @@ void manualMode(std::vector<Room>& rooms) {
     }
     std::cout << "Select a room: ";
     std::cin >> roomChoice;
-    if (roomChoice < 1 || roomChoice >(int)rooms.size()) {
-        std::cout << "Invalid room selection.\n";
+
+    while (std::cin.fail() || roomChoice < 1 || roomChoice > (int)rooms.size()) {
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+        std::cout << "Invalid room selection. Please try again: ";
+        std::cin >> roomChoice;
+    }
+
+    Room& selectedRoom = rooms[roomChoice - 1];
+    if (selectedRoom.devices.empty()) {
+        std::cout << "No devices in this room. Please add devices first.\n";
         return;
     }
-    Room& selectedRoom = rooms[roomChoice - 1];
+
     // List devices in the selected room
     for (size_t i = 0; i < selectedRoom.devices.size(); ++i) {
         std::cout << (i + 1) << ". " << selectedRoom.devices[i].name << " ("
@@ -308,23 +390,29 @@ void manualMode(std::vector<Room>& rooms) {
     }
     std::cout << "Select a device to toggle its status: ";
     std::cin >> deviceChoice;
-    if (deviceChoice < 1 || deviceChoice >(int)selectedRoom.devices.size()) {
-        std::cout << "Invalid device selection.\n";
-        return;
+
+    while (std::cin.fail() || deviceChoice < 1 || deviceChoice >(int)selectedRoom.devices.size()) {
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+        std::cout << "Invalid device selection. Please try again: ";
+        std::cin >> deviceChoice;
     }
+
     Device& selectedDevice = selectedRoom.devices[deviceChoice - 1];
     // Toggle device status
     if (selectedDevice.status) {
         // Device is ON, turn it OFF
         selectedDevice.status = false;
-        selectedDevice.activationRecords.back().offTime = std::time(nullptr);
+        if (!selectedDevice.activationRecords.empty()) {
+            selectedDevice.activationRecords.back().offTime = std::time(nullptr);
+        }
         std::cout << selectedDevice.name << " turned OFF.\n";
     } else {
         // Device is OFF, turn it ON
         selectedDevice.status = true;
         ActivationRecord newRecord;
         newRecord.onTime = std::time(nullptr);
-        newRecord.offTime = newRecord.onTime; // Initialize offTime
+        newRecord.offTime = 0; // Initialize offTime to 0
         selectedDevice.activationRecords.push_back(newRecord);
         std::cout << selectedDevice.name << " turned ON.\n";
     }
@@ -344,21 +432,34 @@ void timerMode(std::vector<Room>& rooms) {
     }
     std::cout << "Select a room: ";
     std::cin >> roomChoice;
-    if (roomChoice < 1 || roomChoice > (int)rooms.size()) {
-        std::cout << "Invalid room selection.\n";
+
+    while (std::cin.fail() || roomChoice < 1 || roomChoice > (int)rooms.size()) {
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+        std::cout << "Invalid room selection. Please try again: ";
+        std::cin >> roomChoice;
+    }
+
+    Room& selectedRoom = rooms[roomChoice - 1];
+    if (selectedRoom.devices.empty()) {
+        std::cout << "No devices in this room. Please add devices first.\n";
         return;
     }
-    Room& selectedRoom = rooms[roomChoice - 1];
+
     // List devices in the selected room
     for (size_t i = 0; i < selectedRoom.devices.size(); ++i) {
         std::cout << (i + 1) << ". " << selectedRoom.devices[i].name << "\n";
     }
     std::cout << "Select a device to schedule: ";
     std::cin >> deviceChoice;
-    if (deviceChoice < 1 || deviceChoice > (int)selectedRoom.devices.size()) {
-        std::cout << "Invalid device selection.\n";
-        return;
+
+    while (std::cin.fail() || deviceChoice < 1 || deviceChoice > (int)selectedRoom.devices.size()) {
+        std::cin.clear();
+        std::cin.ignore(INT_MAX, '\n');
+        std::cout << "Invalid device selection. Please try again: ";
+        std::cin >> deviceChoice;
     }
+
     Device& selectedDevice = selectedRoom.devices[deviceChoice - 1];
 
     std::cout << "Enter ON time (HH:MM): ";
@@ -370,7 +471,7 @@ void timerMode(std::vector<Room>& rooms) {
     std::istringstream iss_on(onTimeStr);
     iss_on >> std::get_time(&tm_on, "%H:%M");
     if (iss_on.fail()) {
-        std::cout << "Invalid ON time format.\n";
+        std::cout << "Invalid ON time format. Please use HH:MM format.\n";
         return;
     }
 
@@ -378,15 +479,17 @@ void timerMode(std::vector<Room>& rooms) {
     std::istringstream iss_off(offTimeStr);
     iss_off >> std::get_time(&tm_off, "%H:%M");
     if (iss_off.fail()) {
-        std::cout << "Invalid OFF time format.\n";
+        std::cout << "Invalid OFF time format. Please use HH:MM format.\n";
         return;
     }
 
     std::time_t now = std::time(nullptr);
     std::tm* now_tm = std::localtime(&now);
+    tm_on.tm_sec = 0;
     tm_on.tm_year = now_tm->tm_year;
     tm_on.tm_mon = now_tm->tm_mon;
     tm_on.tm_mday = now_tm->tm_mday;
+    tm_off.tm_sec = 0;
     tm_off.tm_year = now_tm->tm_year;
     tm_off.tm_mon = now_tm->tm_mon;
     tm_off.tm_mday = now_tm->tm_mday;
@@ -399,37 +502,31 @@ void timerMode(std::vector<Room>& rooms) {
         return;
     }
 
+    // Schedule the device
+    ActivationRecord newRecord;
+    newRecord.onTime = on_time;
+    newRecord.offTime = off_time;
+    selectedDevice.activationRecords.push_back(newRecord);
+
     std::cout << "Device \"" << selectedDevice.name << "\" scheduled from "
         << onTimeStr << " to " << offTimeStr << ".\n";
 
-    // Simulate waiting until ON time
+    // Update device status based on current time
     std::time_t current_time = std::time(nullptr);
-    double seconds_until_on = difftime(on_time, current_time);
-    if (seconds_until_on > 0) {
-        std::cout << "Waiting until ON time...\n";
-        std::this_thread::sleep_for(std::chrono::seconds((int)seconds_until_on));
+
+    if (difftime(on_time, current_time) <= 0 && difftime(off_time, current_time) > 0) {
+        // Current time is between ON and OFF time
+        selectedDevice.status = true;
+        std::cout << "Device \"" << selectedDevice.name << "\" is currently ON.\n";
+    } else if (difftime(off_time, current_time) <= 0) {
+        // OFF time is in the past
+        selectedDevice.status = false;
+        std::cout << "Device \"" << selectedDevice.name << "\" is currently OFF.\n";
     } else {
-        std::cout << "ON time is in the past. Turning device ON immediately.\n";
+        // Device is scheduled for future activation
+        selectedDevice.status = false;
+        std::cout << "Device \"" << selectedDevice.name << "\" will turn ON at " << onTimeStr << ".\n";
     }
-
-    // Turn device ON
-    selectedDevice.status = true;
-    ActivationRecord newRecord;
-    newRecord.onTime = std::time(nullptr); // Record actual ON time
-    newRecord.offTime = off_time;
-    selectedDevice.activationRecords.push_back(newRecord);
-    std::cout << "Device \"" << selectedDevice.name << "\" turned ON.\n";
-
-    // Simulate device being ON until OFF time
-    double seconds_until_off = difftime(off_time, std::time(nullptr));
-    if (seconds_until_off > 0) {
-        std::this_thread::sleep_for(std::chrono::seconds((int)seconds_until_off));
-    }
-
-    // Turn device OFF
-    selectedDevice.status = false;
-    selectedDevice.activationRecords.back().offTime = std::time(nullptr); // Record actual OFF time
-    std::cout << "Device \"" << selectedDevice.name << "\" turned OFF.\n";
 }
 
 // Enquire Device Status function
@@ -478,8 +575,8 @@ void displayTrends(const std::vector<Room>& rooms) {
     std::cout << "Trends\n";
 
     // Which room consumes more energy?
-    std::string highestEnergyRoom;
-    double highestEnergy = 0.0;
+    std::string highestEnergyRoom = "N/A";
+    double highestEnergy = -1.0;
     for (const auto& room : rooms) {
         double roomEnergy = 0.0;
         for (const auto& device : room.devices) {
@@ -490,12 +587,16 @@ void displayTrends(const std::vector<Room>& rooms) {
             highestEnergyRoom = room.name;
         }
     }
-    std::cout << "Room consuming the most energy: " << highestEnergyRoom
-        << " (" << highestEnergy << " kWh)\n";
+    if (highestEnergy >= 0.0) {
+        std::cout << "Room consuming the most energy: " << highestEnergyRoom
+            << " (" << highestEnergy << " kWh)\n";
+    } else {
+        std::cout << "No energy consumption data available.\n";
+    }
 
     // Which device consumes more energy?
-    std::string highestEnergyDevice;
-    double highestDeviceEnergy = 0.0;
+    std::string highestEnergyDevice = "N/A";
+    double highestDeviceEnergy = -1.0;
     for (const auto& room : rooms) {
         for (const auto& device : room.devices) {
             double deviceEnergy = device.calculateEnergyConsumed();
@@ -505,12 +606,16 @@ void displayTrends(const std::vector<Room>& rooms) {
             }
         }
     }
-    std::cout << "Device consuming the most energy: " << highestEnergyDevice
-        << " (" << highestDeviceEnergy << " kWh)\n";
+    if (highestDeviceEnergy >= 0.0) {
+        std::cout << "Device consuming the most energy: " << highestEnergyDevice
+            << " (" << highestDeviceEnergy << " kWh)\n";
+    } else {
+        std::cout << "No energy consumption data available.\n";
+    }
 
     // Which device is activated for more time?
-    std::string longestActiveDevice;
-    double longestActiveTime = 0.0;
+    std::string longestActiveDevice = "N/A";
+    double longestActiveTime = -1.0;
     for (const auto& room : rooms) {
         for (const auto& device : room.devices) {
             double activeTime = device.totalActiveTime(); // in seconds
@@ -520,14 +625,19 @@ void displayTrends(const std::vector<Room>& rooms) {
             }
         }
     }
-    std::cout << "Device activated for the longest time: " << longestActiveDevice
-        << " (" << longestActiveTime / 3600.0 << " hours)\n";
+    if (longestActiveTime >= 0.0) {
+        std::cout << "Device activated for the longest time: " << longestActiveDevice
+            << " (" << longestActiveTime / 3600.0 << " hours)\n";
+    } else {
+        std::cout << "No activation data available.\n";
+    }
 
     std::cout << currentDateTime();
     std::cout << "\n####################################################\n";
 }
 
-// Update Features function (placeholder, can be expanded as needed)
+// Update Features function
 void updateFeatures(std::vector<Room>& rooms) {
+    // Placeholder for any future features
     std::cout << "Update Features - Functionality not implemented yet.\n";
 }
