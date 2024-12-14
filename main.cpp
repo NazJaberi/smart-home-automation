@@ -1,3 +1,10 @@
+//Project name : Smart Home Automation
+// Authers: Ali Nateq & Yazan Youssef
+//Version : 1.0.6
+//Last Revised 12/11/2024
+//file name : main.cpp
+
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -7,7 +14,7 @@
 #include <algorithm>
 #include <map>
 #include <thread>
-#include <sstream>   // For stringstream
+#include <sstream>   
 #include <climits>
 
 // Utility function to get current date and time as a string
@@ -30,8 +37,8 @@ struct ActivationRecord {
 class Device {
 public:
     std::string name;
-    double powerRating; // in watts
-    bool status; // true = ON, false = OFF
+    double powerRating; 
+    bool status; 
     std::vector<ActivationRecord> activationRecords;
 
     Device(std::string n, double p) : name(n), powerRating(p), status(false) {}
@@ -45,7 +52,7 @@ public:
                 // Device is still ON, use current time
                 endTime = std::time(nullptr);
             }
-            double duration = difftime(endTime, record.onTime) / 3600.0; // in hours
+            double duration = difftime(endTime, record.onTime) / 3600.0; 
             totalEnergy += (powerRating / 1000.0) * duration;
         }
         return totalEnergy;
@@ -140,8 +147,8 @@ void mainMenu(std::vector<Room>& rooms) {
         std::cin >> choice;
 
         while (std::cin.fail()) {
-            std::cin.clear(); // Clear error flags
-            std::cin.ignore(INT_MAX, '\n'); // Discard invalid input
+            std::cin.clear(); 
+            std::cin.ignore(INT_MAX, '\n'); 
             std::cout << "Invalid input. Please enter a number between 1 and 5: ";
             std::cin >> choice;
         }
@@ -412,7 +419,7 @@ void manualMode(std::vector<Room>& rooms) {
         selectedDevice.status = true;
         ActivationRecord newRecord;
         newRecord.onTime = std::time(nullptr);
-        newRecord.offTime = 0; // Initialize offTime to 0
+        newRecord.offTime = 0; 
         selectedDevice.activationRecords.push_back(newRecord);
         std::cout << selectedDevice.name << " turned ON.\n";
     }
@@ -618,7 +625,7 @@ void displayTrends(const std::vector<Room>& rooms) {
     double longestActiveTime = -1.0;
     for (const auto& room : rooms) {
         for (const auto& device : room.devices) {
-            double activeTime = device.totalActiveTime(); // in seconds
+            double activeTime = device.totalActiveTime(); 
             if (activeTime > longestActiveTime) {
                 longestActiveTime = activeTime;
                 longestActiveDevice = device.name + " in " + room.name;
@@ -636,8 +643,6 @@ void displayTrends(const std::vector<Room>& rooms) {
     std::cout << "\n####################################################\n";
 }
 
-// Update Features function
 void updateFeatures(std::vector<Room>& rooms) {
-    // Placeholder for any future features
     std::cout << "Update Features - Functionality not implemented yet.\n";
 }
