@@ -46,7 +46,7 @@ To run the Smart Home Automation program, you will need:
 
 ## Getting the Code
 
-Copy the entire code provided and save it in a file named `smart_home.cpp`. Ensure that the file extension is `.cpp` to indicate that it's a C++ source file.
+Copy the entire code provided and save it in a file named `main.cpp`. Ensure that the file extension is `.cpp` to indicate that it's a C++ source file.
 
 ---
 
@@ -61,7 +61,7 @@ Copy the entire code provided and save it in a file named `smart_home.cpp`. Ensu
 
 2. **Navigate to the Directory:**
 
-   Use the `cd` command to navigate to the directory where you saved `smart_home.cpp`.
+   Use the `cd` command to navigate to the directory where you saved `main.cpp`.
 
    ```bash
    cd path/to/your/directory
@@ -86,7 +86,7 @@ Copy the entire code provided and save it in a file named `smart_home.cpp`. Ensu
    - **Compile the Program:**
 
      ```bash
-     g++ -std=c++11 -o smart_home smart_home.cpp
+     g++ -std=c++11 -o smart_home main.cpp
      ```
 
      - `-std=c++11` specifies that we are using the C++11 standard.
